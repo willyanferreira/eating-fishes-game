@@ -79,3 +79,36 @@ body {
     opacity: 0;
   }
 }
+
+/* ===== Joystick Móvel ===== */
+#joystick {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  z-index: 9999;
+}
+
+#joystick .middle {
+  display: flex;
+  gap: 5px;
+}
+
+#joystick .btn {
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  border-radius: 50%;
+  border: none;
+  background-color: rgba(0,0,0,0.4);
+  color: white;
+  touch-action: none;
+  user-select: none;
+}
+
+#joystick .btn:active {
+  background-color: rgba(255,255,255,0.3);
+}
