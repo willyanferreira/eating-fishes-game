@@ -1,131 +1,159 @@
-const gameArea = document.getElementById('gameArea');
-    const player = document.getElementById('player');
-    const scoreDisplay = document.getElementById('score');
+// ===== Variáveis principais =====
+const gameContainer = document.getElementById('gameContainer');
+const player = document.getElementById('player');
+const livesDisplay = document.getElementById('lives');
+const sizeDisplay = document.getElementById('size');
+const message = document.getElementById('message');
 
-    let posX = 300;
-    let posY = 200;
-    let playerSize = 50;
-    let step = 10;
-    let score = 0;
-    let eatenCount = 0;
-    let gameOver = false;
+let playerSize = 30;
+let playerSpeed = 5;
+let lives = 3;
+let enemies = [];
+let keys = {};
+let gameInterval;
+let spawnInterval;
 
-    player.style.width = playerSize + 'px';
-    player.style.height = playerSize + 'px';
-    player.style.top = posY + 'px';
-    player.style.left = posX + 'px';
+// ===== Posição inicial do jogador =====
+let playerX = window.innerWidth / 2;
+let playerY = window.innerHeight / 2;
 
-    // Movimento do jogador
-    document.addEventListener('keydown', (e) => {
-      if (gameOver) return;
+// ===== Eventos de teclado =====
+document.addEventListener('keydown', e => keys[e.key] = true);
+document.addEventListener('keyup', e => keys[e.key] = false);
 
-      const maxX = gameArea.clientWidth - playerSize;
-      const maxY = gameArea.clientHeight - playerSize;
+// ===== Atualização do HUD =====
+function updateHUD() {
+  livesDisplay.textContent = `❤️ Vidas: ${lives}`;
+  sizeDisplay.textContent = `📏 Tamanho: ${playerSize}`;
+}
 
-      if (e.key === 'ArrowUp' && posY > 0) posY -= step;
-      else if (e.key === 'ArrowDown' && posY < maxY) posY += step;
-      else if (e.key === 'ArrowLeft' && posX > 0) posX -= step;
-      else if (e.key === 'ArrowRight' && posX < maxX) posX += step;
+// ===== Movimento do jogador =====
+function movePlayer() {
+  if (keys['ArrowUp'] && playerY > 0) playerY -= playerSpeed;
+  if (keys['ArrowDown'] && playerY < window.innerHeight - playerSize) playerY += playerSpeed;
+  if (keys['ArrowLeft'] && playerX > 0) playerX -= playerSpeed;
+  if (keys['ArrowRight'] && playerX < window.innerWidth - playerSize) playerX += playerSpeed;
+  player.style.left = playerX + 'px';
+  player.style.top = playerY + 'px';
+  player.style.width = playerSize + 'px';
+  player.style.height = playerSize + 'px';
+}
 
-      updatePlayerPosition();
-    });
+// ===== Criação de peixes inimigos =====
+function createEnemy() {
+  const enemy = document.createElement('div');
+  enemy.classList.add('enemy');
 
-    function updatePlayerPosition() {
-      player.style.top = posY + 'px';
-      player.style.left = posX + 'px';
+  const size = Math.random() * 60 + 20;
+  enemy.dataset.size = size;
+  enemy.style.width = size + 'px';
+  enemy.style.height = size + 'px';
+
+  const fromLeft = Math.random() < 0.5;
+  const y = Math.random() * (window.innerHeight - size);
+  enemy.style.top = y + 'px';
+  enemy.style.left = fromLeft ? '-60px' : window.innerWidth + '60px';
+  enemy.dataset.direction = fromLeft ? 1 : -1;
+
+  gameContainer.appendChild(enemy);
+  enemies.push(enemy);
+}
+
+// ===== Movimento dos inimigos =====
+function moveEnemies() {
+  enemies.forEach((enemy, index) => {
+    const dir = parseFloat(enemy.dataset.direction);
+    const size = parseFloat(enemy.dataset.size);
+    let x = parseFloat(enemy.style.left);
+    x += dir * 2; // velocidade
+    enemy.style.left = x + 'px';
+
+    // Remover se sair da tela
+    if (x < -100 || x > window.innerWidth + 100) {
+      enemy.remove();
+      enemies.splice(index, 1);
     }
 
-    // Função para criar inimigos
-    function createEnemy() {
-      if (gameOver) return;
+    // Checar colisão
+    checkCollision(enemy, size, index);
+  });
+}
 
-      const enemy = document.createElement('div');
-      enemy.classList.add('enemy');
+// ===== Detecção de colisão =====
+function checkCollision(enemy, size, index) {
+  const eRect = enemy.getBoundingClientRect();
+  const pRect = player.getBoundingClientRect();
 
-      const size = Math.floor(Math.random() * 80) + 20; // 20 a 100 px
-      enemy.style.width = size + 'px';
-      enemy.style.height = size + 'px';
-      enemy.dataset.size = size;
-
-      // Escolher lado de origem: esquerda ou direita
-      const fromLeft = Math.random() < 0.5;
-      const startY = Math.random() * (gameArea.clientHeight - size);
-      const startX = fromLeft ? -size : gameArea.clientWidth;
-      const color = hsl(${Math.random() * 360}, 70%, 60%);
-
-      enemy.style.top = startY + 'px';
-      enemy.style.left = startX + 'px';
-      enemy.style.backgroundColor = color;
-      gameArea.appendChild(enemy);
-
-      const speed = 1 + Math.random() * 1; // Velocidade lenta (1 a 2 px/frame)
-
-      const moveInterval = setInterval(() => {
-        if (gameOver) {
-          clearInterval(moveInterval);
-          if (enemy.parentNode) gameArea.removeChild(enemy);
-          return;
-        }
-
-        let currentX = parseFloat(enemy.style.left);
-        if (fromLeft) currentX += speed;
-        else currentX -= speed;
-        enemy.style.left = currentX + 'px';
-
-        // Remove ao sair da tela
-        if (fromLeft && currentX > gameArea.clientWidth || !fromLeft && currentX < -size) {
-          clearInterval(moveInterval);
-          if (enemy.parentNode) gameArea.removeChild(enemy);
-        }
-
-        // Checar colisão com jogador
-        const playerRect = player.getBoundingClientRect();
-        const enemyRect = enemy.getBoundingClientRect();
-
-        if (isColliding(playerRect, enemyRect)) {
-          const enemySize = parseInt(enemy.dataset.size);
-
-          if (enemySize > playerSize) {
-            endGame();
-          } else {
-            // Engole inimigo
-            score++;
-            eatenCount++;
-            scoreDisplay.textContent = Pontos: ${score};
-            if (enemy.parentNode) gameArea.removeChild(enemy);
-            clearInterval(moveInterval);
-
-            // Aumentar tamanho a cada 5 inimigos comidos
-            if (eatenCount % 5 === 0) {
-              playerSize += 10;
-              player.style.width = playerSize + 'px';
-              player.style.height = playerSize + 'px';
-            }
-          }
-        }
-      }, 15); // taxa de atualização ~60fps
+  if (
+    pRect.left < eRect.right &&
+    pRect.right > eRect.left &&
+    pRect.top < eRect.bottom &&
+    pRect.bottom > eRect.top
+  ) {
+    if (playerSize >= size) {
+      // Engolir peixe
+      enemy.remove();
+      enemies.splice(index, 1);
+      playerSize += 3;
+      updateHUD();
+      if (playerSize >= 300) {
+        endGame(true);
+      }
+    } else {
+      // Perde vida
+      enemy.remove();
+      enemies.splice(index, 1);
+      lives--;
+      updateHUD();
+      if (lives <= 0) {
+        endGame(false);
+      }
     }
+  }
+}
 
-    // Verificar colisão
-    function isColliding(rect1, rect2) {
-      return !(
-        rect1.top > rect2.bottom ||
-        rect1.bottom < rect2.top ||
-        rect1.left > rect2.right ||
-        rect1.right < rect2.left
-      );
-    }
+// ===== Bolhas decorativas =====
+function createBubble() {
+  const bubble = document.createElement('div');
+  bubble.classList.add('bubble');
+  const size = Math.random() * 10 + 5;
+  bubble.style.width = size + 'px';
+  bubble.style.height = size + 'px';
+  bubble.style.left = Math.random() * window.innerWidth + 'px';
+  bubble.style.animationDuration = (Math.random() * 5 + 3) + 's';
+  gameContainer.appendChild(bubble);
 
-    // Fim do jogo
-    function endGame() {
-      gameOver = true;
-      const overlay = document.createElement('div');
-      overlay.classList.add('overlay');
-      overlay.innerText = 'GAME OVER';
-      gameArea.appendChild(overlay);
-    }
+  setTimeout(() => bubble.remove(), 8000);
+}
 
-    // Criar inimigos de forma contínua
-    setInterval(() => {
-      if (!gameOver) createEnemy();
-    }, 1500); // a cada 1.5s cria um novo
+// ===== Loop principal =====
+function gameLoop() {
+  movePlayer();
+  moveEnemies();
+}
+
+// ===== Fim de jogo =====
+function endGame(victory) {
+  clearInterval(gameInterval);
+  clearInterval(spawnInterval);
+  message.style.display = 'block';
+  message.textContent = victory ? '🏆 You Win!' : '💀 Game Over';
+
+  setTimeout(() => {
+    const again = confirm('Jogar novamente?');
+    if (again) location.reload();
+  }, 1000);
+}
+
+// ===== Inicialização =====
+function startGame() {
+  updateHUD();
+  player.style.left = playerX + 'px';
+  player.style.top = playerY + 'px';
+
+  gameInterval = setInterval(gameLoop, 30);
+  spawnInterval = setInterval(createEnemy, 1500);
+  setInterval(createBubble, 1000);
+}
+
+startGame();
