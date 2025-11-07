@@ -154,6 +154,43 @@ function startGame() {
   gameInterval = setInterval(gameLoop, 30);
   spawnInterval = setInterval(createEnemy, 1500);
   setInterval(createBubble, 1000);
+
+  // Se for dispositivo móvel, cria joystick
+  if (/Mobi|Android/i.test(navigator.userAgent)) {
+    createJoystick();
+  }
+}
+
+// ===== Criação do joystick virtual =====
+function createJoystick() {
+  const joystick = document.createElement('div');
+  joystick.id = 'joystick';
+  joystick.innerHTML = `
+    <button class="btn up">▲</button>
+    <div class="middle">
+      <button class="btn left">◀</button>
+      <button class="btn right">▶</button>
+    </div>
+    <button class="btn down">▼</button>
+  `;
+  document.body.appendChild(joystick);
+
+  const buttons = joystick.querySelectorAll('.btn');
+  buttons.forEach(btn => {
+    const dir = btn.classList.contains('up') ? 'ArrowUp'
+               : btn.classList.contains('down') ? 'ArrowDown'
+               : btn.classList.contains('left') ? 'ArrowLeft'
+               : 'ArrowRight';
+
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      keys[dir] = true;
+    });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      keys[dir] = false;
+    });
+  });
 }
 
 startGame();
