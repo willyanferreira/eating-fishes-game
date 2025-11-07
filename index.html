@@ -11,13 +11,13 @@
 
 <body>
 
-<div class="container text-center">
-    <h2 class="mb-3 text-primary">Mini Game - Quadrados Laterais</h2>
-    <p class="text-muted">Uses as setas para mover o quadrado azul. Evite os grandes!</p>
-    <p id="score" class="fw-bold">Pontos: 0</p>
-    <div class="game-area mx-auto" id="gameArea">
-      <div class="player" id="player"></div>
+  <div id="gameContainer">
+    <div id="player"></div>
+    <div id="hud">
+      <span id="lives">❤️ Vidas: 3</span>
+      <span id="size">📏 Tamanho: 30</span>
     </div>
+    <div id="message"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
